@@ -1,0 +1,76 @@
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to bottom, #5ed0f2, #e0f6ff);
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+canvas {
+  border: 3px solid #222;
+  border-radius: 10px;
+  background: linear-gradient(to bottom, #36848d, #e0f6ff);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  width: 400px;
+  height: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+
+button {
+  padding: 10px 25px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  background-color: #1d711c;
+  color: #222;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+button:hover {
+  transform: translateX(-50%) scale(1.1);
+  background-color: #ffc107;
+}
+
+#score {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+}
+
+#gameOver {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 40px;
+  font-weight: bold;
+  color: #ff3e3e;
+  text-shadow: 3px 3px 8px rgba(0,0,0,0.7);
+  display: none;
+  text-align: center;
+}
+#credit {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  color: #ffdd59;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive; /* fun, playful font */
+}
+
