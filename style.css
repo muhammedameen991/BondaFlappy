@@ -1,38 +1,47 @@
+/* Body Setup */
 body {
+  background: linear-gradient(to bottom, #43cea2, #185a9d);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   height: 100vh;
+  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(to bottom, #5ed0f2, #e0f6ff);
   font-family: 'Arial', sans-serif;
   overflow: hidden;
 }
 
+/* Game Canvas */
 canvas {
-  border: 3px solid #222;
-  border-radius: 10px;
-  background: linear-gradient(to bottom, #36848d, #e0f6ff);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   width: 400px;
   height: 600px;
   max-width: 90vw;
   max-height: 80vh;
+  border: 3px solid #222;
+  border-radius: 12px;
+  background: transparent; /* background image visible */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: block;
 }
 
+/* Jump Button */
 button {
-  padding: 10px 25px;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  background-color: #1d711c;
-  color: #222;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
+  padding: 12px 28px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  background-color: #1d711c;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 button:hover {
@@ -40,6 +49,7 @@ button:hover {
   background-color: #ffc107;
 }
 
+/* Score Display */
 #score {
   position: absolute;
   top: 20px;
@@ -48,21 +58,52 @@ button:hover {
   font-size: 32px;
   font-weight: bold;
   color: #fff;
-  text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.7), 0 0 12px #fff;
 }
 
+/* Game Over Section */
 #gameOver {
   position: absolute;
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 40px;
-  font-weight: bold;
+  font-size: 48px;
+  font-weight: 900;
+  font-family: 'Verdana', 'Arial', sans-serif;
   color: #ff3e3e;
-  text-shadow: 3px 3px 8px rgba(0,0,0,0.7);
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.7), 0 0 15px #ff6f6f;
   display: none;
   text-align: center;
 }
+
+#gameOver .finalScore {
+  display: block;
+  font-size: 28px;
+  color: #fff;
+  text-shadow: 1px 1px 5px rgba(0,0,0,0.7), 0 0 10px #00f2fe;
+  margin-top: 10px;
+}
+
+#gameOver button {
+  margin-top: 20px;
+  padding: 12px 30px;
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 10px;
+  border: none;
+  background-color: #1d711c;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+#gameOver button:hover {
+  background-color: #ffc107;
+  transform: scale(1.1);
+}
+
+/* Credit Text */
 #credit {
   position: absolute;
   bottom: 5px;
@@ -71,6 +112,12 @@ button:hover {
   font-size: 16px;
   color: #ffdd59;
   text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive; /* fun, playful font */
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
 }
 
+/* Pipes */
+.pipe {
+  position: absolute;
+  width: 70px;
+  background-color: #228B22;
+}
