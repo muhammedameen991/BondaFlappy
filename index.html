@@ -4,15 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bonda Flappy</title>
-<link rel="icon" type="image/png" href="/images/bonda.png">
 
+  <!-- App Icon -->
+  <link rel="icon" type="image/png" href="images/bonda.png">
+
+  <!-- Manifest for PWA -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Theme color for PWA -->
+  <meta name="theme-color" content="#ffcc00">
+
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="gameCanvas" width="400" height="600"></canvas>
   <div id="credit">Made by Ameen</div>
+
+  <!-- Game Script -->
   <script src="script.js"></script>
 
-
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered:', reg))
+          .catch(err => console.log('Service Worker failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>
