@@ -1,47 +1,25 @@
-// ===== Service Worker =====
-const CACHE_NAME = "bonda-flappy-v1";
-
-// List of files to cache
-const ASSETS = [
-  "/",                  // root
-  "/index.html",        // main HTML
-  "/style.css",         // CSS
-  "/script.js",         // JS
-  "/images/bonda.png",  // Bird icon
-  "/sounds/jump.mp3",   // jump sound
-  "/sounds/hit.mp3",    // hit sound
-  "/sounds/point.mp3"   // point sound
+const CACHE_NAME = "bonda-flappy-cache-v1";
+const FILES_TO_CACHE = [
+  "/",
+  "/index.html",
+  "/style.css",
+  "/script.js",
+  "/manifest.json",
+  "/images/bonda.png",
+  "/images/android-icon-192x192.png",
+  "/sounds/jump.mp3",
+  "/sounds/hit.mp3",
+  "/sounds/point.mp3"
 ];
 
-// Install event - cache all files
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
   );
 });
 
-// Activate event - remove old caches
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
-  );
-});
-
-// Fetch event - load from cache first, then network
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).catch(() => {
-        // Optional: fallback offline page or image
-      });
-    })
+    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
