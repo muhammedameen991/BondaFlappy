@@ -12,9 +12,9 @@ const birdImg = new Image();
 birdImg.src = "images/bonda.png";
 
 // Load sounds
-const jumpSound = new Audio("sounds/jump.mp3");
-const hitSound = new Audio("sounds/hit.mp3");
-const pointSound = new Audio("sounds/point.mp3");
+const jumpSound = new Audio("sounds/jump5.mp3");
+const hitSound = new Audio("sounds/hit5.mp3");
+const pointSound = new Audio("sounds/point5.mp3");
 
 // Pipes
 let pipes = [];
@@ -252,3 +252,4 @@ window.addEventListener("touchstart", function(e) {
 // Start the game
 pipes.push({ x: canvas.width, top: 150, bottom: 150 + pipeGap, scored: false });
 gameLoop();
+
