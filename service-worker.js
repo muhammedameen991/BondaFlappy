@@ -7,9 +7,9 @@ const ASSETS = [
   "/manifest.json",
   "/images/bonda.png",
   "/images/android-icon-192x192.png",
-  "/sounds/jump.mp3",
-  "/sounds/hit.mp3",
-  "/sounds/point.mp3"
+  "/sounds/jump5.mp3",
+  "/sounds/hit5.mp3",
+  "/sounds/point5.mp3"
 ];
 
 // Install service worker and cache files
@@ -44,4 +44,5 @@ self.addEventListener("activate", event => {
   );
   console.log("Service Worker: Activated");
 });
+
 
