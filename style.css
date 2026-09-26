@@ -1,123 +1,210 @@
-/* Body Setup */
-body {
-  background: linear-gradient(to bottom, #43cea2, #185a9d);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  height: 100vh;
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  user-select: none;
+}
+
+body {
+  background: #090d16;
+  color: #f8fafc;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: 'Arial', sans-serif;
+  min-height: 100vh;
   overflow: hidden;
 }
 
-/* Game Canvas */
-canvas {
+#game-container {
+  position: relative;
   width: 400px;
   height: 600px;
-  max-width: 90vw;
-  max-height: 80vh;
-  border: 3px solid #222;
-  border-radius: 12px;
-  background: transparent; /* background image visible */
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 242, 254, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+canvas {
   display: block;
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
 }
 
-/* Jump Button */
-button {
+/* Glassmorphism Panel Overlay */
+.glass-panel {
   position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 28px;
-  font-size: 18px;
-  font-weight: bold;
-  border: none;
-  border-radius: 10px;
-  background-color: #1d711c;
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-button:hover {
-  transform: translateX(-50%) scale(1.1);
-  background-color: #ffc107;
-}
-
-/* Score Display */
-#score {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 32px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 2px 2px 8px rgba(0,0,0,0.7), 0 0 12px #fff;
-}
-
-/* Game Over Section */
-#gameOver {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 48px;
-  font-weight: 900;
-  font-family: 'Verdana', 'Arial', sans-serif;
-  color: #ff3e3e;
-  text-shadow: 2px 2px 8px rgba(0,0,0,0.7), 0 0 15px #ff6f6f;
+.menu-screen {
+  width: 90%;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
   display: none;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  pointer-events: auto;
+  transition: all 0.3s ease;
 }
 
-#gameOver .finalScore {
-  display: block;
-  font-size: 28px;
+.menu-screen.active {
+  display: flex;
+}
+
+.game-title {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
   color: #fff;
-  text-shadow: 1px 1px 5px rgba(0,0,0,0.7), 0 0 10px #00f2fe;
-  margin-top: 10px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
 }
 
-#gameOver button {
-  margin-top: 20px;
-  padding: 12px 30px;
-  font-size: 20px;
-  font-weight: bold;
-  border-radius: 10px;
+.game-title span {
+  color: #00f2fe;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 24px;
+}
+
+.button-group, .mp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Neon Buttons */
+.btn-neon {
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
   border: none;
-  background-color: #1d711c;
-  color: #fff;
+  border-radius: 12px;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-#gameOver button:hover {
-  background-color: #ffc107;
-  transform: scale(1.1);
+.btn-neon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.7);
 }
 
-/* Credit Text */
-#credit {
+.btn-neon.alt {
+  background: linear-gradient(135deg, #7928ca 0%, #ff0080 100%);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+}
+
+.btn-neon.alt:hover {
+  box-shadow: 0 0 25px rgba(255, 0, 128, 0.7);
+}
+
+.btn-neon.small {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+/* Sub Panels & Inputs */
+.sub-panel {
+  width: 100%;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+#qrcode-container {
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+textarea, input[type="text"] {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #00f2fe;
+  padding: 8px;
+  font-size: 0.75rem;
+  resize: none;
+}
+
+textarea {
+  height: 50px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* HUD Overlay */
+#hud-panel {
   position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 16px;
-  color: #ffdd59;
-  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
+  top: 16px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
 }
 
-/* Pipes */
-.pipe {
-  position: absolute;
-  width: 70px;
-  background-color: #228B22;
+.score-board {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #00f2fe;
+}
+
+#p2-score-tag {
+  font-size: 1rem;
+  color: #ff0080;
+  margin-left: 12px;
+}
+
+.stats-card {
+  margin: 16px 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
