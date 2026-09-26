@@ -1,255 +1,454 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// --- GAME CANVAS & ENGINE CONFIG ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-// Bird
-let birdX = 80;
-let birdY = 300;
-let birdRadius = 15;
-let velocity = 0;
-
-// Load Bird Image
-const birdImg = new Image();
-birdImg.src = "images/bonda.png";
-
-// Load sounds
-const jumpSound = new Audio("sounds/jump5.mp3");
-const hitSound = new Audio("sounds/hit5.mp3");
-const pointSound = new Audio("sounds/point5.mp3");
-
-// Pipes
-let pipes = [];
-let pipeWidth = 50;
-
-// Score and game state
+let gameState = 'MENU'; // 'MENU', 'PLAYING', 'GAMEOVER'
+let isMultiplayer = false;
+let isHost = false;
 let score = 0;
-let gameOver = false;
+let p2Score = 0;
+let highScore = localStorage.getItem('bonda_highscore') || 0;
 
-// Difficulty levels
-const difficulty = {
-  easy:   { gravity: 0.4, lift: -7, pipeGap: 180, pipeSpeed: 2 },
-  medium: { gravity: 0.5, lift: -8, pipeGap: 140, pipeSpeed: 3 },
-  hard:   { gravity: 0.6, lift: -9, pipeGap: 110, pipeSpeed: 4 }
+// Dynamic Canvas Auto-Resizing to match style.css bounds
+function resizeCanvas() {
+  const container = document.getElementById('game-container');
+  if (container) {
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+  }
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// Load Sprite Assets (Gracefully falls back to glow shape if image fails/missing)
+const bondaImg = new Image();
+bondaImg.src = 'images/bonda.png';
+
+// --- GAME OBJECTS ---
+const bonda = {
+  x: 80,
+  y: 250,
+  radius: 18,
+  velocity: 0,
+  gravity: 0.35,
+  jump: -6.5,
+  hasShield: false,
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    let angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, this.velocity * 0.1));
+    ctx.rotate(angle);
+
+    if (bondaImg.complete && bondaImg.naturalWidth !== 0) {
+      ctx.drawImage(bondaImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+    } else {
+      // Glow Fallback Circle
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.shadowColor = '#00f2fe';
+      ctx.shadowBlur = 15;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    // Shield FX Overlay
+    if (this.hasShield) {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#00f2fe';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+  update() {
+    this.velocity += this.gravity;
+    this.y += this.velocity;
+    if (this.y + this.radius > canvas.height) endGame();
+    if (this.y - this.radius < 0) this.y = this.radius;
+  }
 };
 
-// Current difficulty
-let level = "easy"; // "easy", "medium", "hard"
-let gravity = difficulty[level].gravity;
-let lift = difficulty[level].lift;
-let pipeGap = difficulty[level].pipeGap;
-let pipeSpeed = difficulty[level].pipeSpeed;
+// Ghost Player Structure for WebRTC P2P
+const ghostPlayer = {
+  x: 80,
+  y: 250,
+  active: false,
+  draw() {
+    if (!this.active) return;
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, bonda.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff0080';
+    ctx.fill();
+    ctx.restore();
+  }
+};
 
-// Draw Bird
-function drawBird() {
-  ctx.drawImage(
-    birdImg,
-    birdX - birdRadius,
-    birdY - birdRadius,
-    birdRadius * 6,
-    birdRadius * 6
-  );
-}
+// Pipes, Powerups, and Particles
+let pipes = [];
+let particles = [];
+let powerups = [];
+let frameCount = 0;
 
-// Draw Pipes
-function drawPipes() {
-  ctx.fillStyle = "green";
-  for (let pipe of pipes) {
-    ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-    ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
+class Pipe {
+  constructor(x) {
+    this.x = x;
+    this.width = 52;
+    this.gap = 130;
+    this.topHeight = Math.floor(Math.random() * (canvas.height - this.gap - 120)) + 40;
+    this.bottomY = this.topHeight + this.gap;
+    this.passed = false;
+  }
+  draw() {
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2;
+
+    // Top Pipe
+    ctx.fillRect(this.x, 0, this.width, this.topHeight);
+    ctx.strokeRect(this.x, 0, this.width, this.topHeight);
+
+    // Bottom Pipe
+    ctx.fillRect(this.x, this.bottomY, this.width, canvas.height - this.bottomY);
+    ctx.strokeRect(this.x, this.bottomY, this.width, canvas.height - this.bottomY);
+  }
+  update() {
+    this.x -= 2.5;
   }
 }
 
-// Update Pipes
-function updatePipes() {
-  for (let pipe of pipes) {
-    pipe.x -= pipeSpeed;
+class Particle {
+  constructor(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    this.vx = (Math.random() - 0.5) * 3;
+    this.vy = (Math.random() - 0.5) * 3;
+    this.alpha = 1;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, 4, 4);
+    ctx.restore();
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.alpha -= 0.03;
+  }
+}
 
-    // Collision detection
-    if (
-      birdX + birdRadius > pipe.x &&
-      birdX - birdRadius < pipe.x + pipeWidth &&
-      (birdY - birdRadius < pipe.top || birdY + birdRadius > pipe.bottom)
-    ) {
-      if (!gameOver) {
-        gameOver = true;
-        hitSound.currentTime = 0;
-        hitSound.play();
+class Powerup {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    this.type = type; // 'shield'
+    this.radius = 12;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = this.type === 'shield' ? '#00f2fe' : '#a855f7';
+    ctx.fill();
+    ctx.closePath();
+  }
+  update() {
+    this.x -= 2.5;
+  }
+}
+
+// --- SERVERLESS WEBRTC MULTIPLAYER CLASS ---
+class ServerlessMultiplayer {
+  constructor() {
+    this.pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    this.dc = null;
+    this.setupListeners();
+  }
+
+  setupListeners() {
+    this.pc.ondatachannel = (e) => {
+      this.dc = e.channel;
+      this.bindDataChannelEvents();
+    };
+  }
+
+  bindDataChannelEvents() {
+    this.dc.onopen = () => console.log('P2P Channel Connection Established!');
+    this.dc.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.y !== undefined) ghostPlayer.y = data.y;
+        if (data.score !== undefined) {
+          p2Score = data.score;
+          const elem = document.getElementById('p2-score');
+          if (elem) elem.innerText = p2Score;
+        }
+      } catch (err) {
+        console.error('Data parsing error:', err);
       }
-    }
-
-    // Scoring
-    if (!pipe.scored && pipe.x + pipeWidth < birdX) {
-      score++;
-      pipe.scored = true;
-      pointSound.currentTime = 0;
-      pointSound.play();
-    }
+    };
   }
 
-  // Remove off-screen pipes
-  if (pipes.length > 0 && pipes[0].x < -pipeWidth) {
-    pipes.shift();
-  }
+  async createHostOffer() {
+    this.dc = this.pc.createDataChannel('gameSync');
+    this.bindDataChannelEvents();
+    const offer = await this.pc.createOffer();
+    await this.pc.setLocalDescription(offer);
 
-  // Add new pipes
-  if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-    let pipeTop = Math.random() * (canvas.height - pipeGap - 100) + 50;
-    let pipeBottom = pipeTop + pipeGap;
-    pipes.push({
-      x: canvas.width,
-      top: pipeTop,
-      bottom: pipeBottom,
-      scored: false,
+    return new Promise((resolve) => {
+      this.pc.onicecandidate = (e) => {
+        if (!e.candidate) {
+          resolve(btoa(JSON.stringify(this.pc.localDescription)));
+        }
+      };
     });
   }
-}
 
-// Update Bird
-function updateBird() {
-  velocity += gravity;
-  birdY += velocity;
+  async processHostOffer(offerBase64) {
+    const offer = JSON.parse(atob(offerBase64));
+    await this.pc.setRemoteDescription(offer);
+    const answer = await this.pc.createAnswer();
+    await this.pc.setLocalDescription(answer);
 
-  if (birdY + birdRadius > canvas.height || birdY - birdRadius < 0) {
-    if (!gameOver) {
-      gameOver = true;
-      hitSound.currentTime = 0;
-      hitSound.play();
+    return new Promise((resolve) => {
+      this.pc.onicecandidate = (e) => {
+        if (!e.candidate) {
+          resolve(btoa(JSON.stringify(this.pc.localDescription)));
+        }
+      };
+    });
+  }
+
+  async completeConnection(answerBase64) {
+    const answer = JSON.parse(atob(answerBase64));
+    await this.pc.setRemoteDescription(answer);
+  }
+
+  sendState(state) {
+    if (this.dc && this.dc.readyState === 'open') {
+      this.dc.send(JSON.stringify(state));
     }
   }
 }
 
-// Draw Score
-function drawScore() {
-  ctx.fillStyle = "#ffcc00"; // yellow
-  ctx.font = "bold 24px 'Comic Sans MS', Arial";
-  ctx.textAlign = "left";
-  ctx.fillText("Score: " + score, 20, 40);
-}
+const p2p = new ServerlessMultiplayer();
 
-// Restart Game
-function restartGame() {
-  birdY = 300;
-  velocity = 0;
-  pipes = [];
-  score = 0;
-  gameOver = false;
-  pipes.push({ x: canvas.width, top: 150, bottom: 150 + pipeGap, scored: false });
-  canvas.removeEventListener("click", restartClick);
-  gameLoop();
-}
-
-// Handle click for restart button
-function restartClick(e) {
-  let rect = canvas.getBoundingClientRect();
-  let mouseX = e.clientX - rect.left;
-  let mouseY = e.clientY - rect.top;
-
-  if (
-    mouseX > canvas.width / 2 - 70 &&
-    mouseX < canvas.width / 2 + 70 &&
-    mouseY > canvas.height / 2 + 40 &&
-    mouseY < canvas.height / 2 + 90
-  ) {
-    restartGame();
-  }
-}
-
-// Hover effect for restart button
-canvas.addEventListener("mousemove", function(e) {
-  let rect = canvas.getBoundingClientRect();
-  let mouseX = e.clientX - rect.left;
-  let mouseY = e.clientY - rect.top;
-
-  if (
-    gameOver &&
-    mouseX > canvas.width / 2 - 70 &&
-    mouseX < canvas.width / 2 + 70 &&
-    mouseY > canvas.height / 2 + 40 &&
-    mouseY < canvas.height / 2 + 90
-  ) {
-    canvas.style.cursor = "pointer";
-  } else {
-    canvas.style.cursor = "default";
-  }
-});
-
-// Difficulty switch
-function setDifficulty(newLevel) {
-  level = newLevel;
-  gravity = difficulty[level].gravity;
-  lift = difficulty[level].lift;
-  pipeGap = difficulty[level].pipeGap;
-  pipeSpeed = difficulty[level].pipeSpeed;
-}
-
-
-
-// Game Loop
+// --- GAME LOOP & LOGIC ---
 function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (gameOver) {
-    // Background overlay
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (gameState === 'PLAYING') {
+    frameCount++;
 
-    // Game Over text
-    ctx.fillStyle = "#ff4444";
-    ctx.font = "bold 50px 'Comic Sans MS', Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 40);
+    // Spawn Pipes
+    if (frameCount % 90 === 0) {
+      const p = new Pipe(canvas.width);
+      pipes.push(p);
 
-    // Final Score
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 25px Arial";
-    ctx.fillText("Final Score: " + score, canvas.width / 2, canvas.height / 2 + 5);
+      // Random Power-up Spawn
+      if (Math.random() < 0.3) {
+        powerups.push(new Powerup(canvas.width + 20, p.topHeight + p.gap / 2, 'shield'));
+      }
+    }
 
-    // Restart Button
-    ctx.fillStyle = "#00ccff";
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 3;
-    ctx.fillRect(canvas.width / 2 - 70, canvas.height / 2 + 40, 140, 50);
-    ctx.strokeRect(canvas.width / 2 - 70, canvas.height / 2 + 40, 140, 50);
+    // Update & Draw Pipes
+    for (let i = pipes.length - 1; i >= 0; i--) {
+      pipes[i].update();
+      pipes[i].draw();
 
-    // Restart text
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText("Restart", canvas.width / 2, canvas.height / 2 + 75);
+      // Check Point Score
+      if (!pipes[i].passed && bonda.x > pipes[i].x + pipes[i].width) {
+        pipes[i].passed = true;
+        score++;
+        document.getElementById('current-score').innerText = score;
+      }
 
-    canvas.addEventListener("click", restartClick);
-    return;
+      // Check Collisions
+      if (
+        bonda.x + bonda.radius > pipes[i].x &&
+        bonda.x - bonda.radius < pipes[i].x + pipes[i].width &&
+        (bonda.y - bonda.radius < pipes[i].topHeight || bonda.y + bonda.radius > pipes[i].bottomY)
+      ) {
+        if (bonda.hasShield) {
+          bonda.hasShield = false;
+          pipes.splice(i, 1);
+          continue;
+        } else {
+          endGame();
+        }
+      }
+
+      if (pipes[i] && pipes[i].x < -pipes[i].width) pipes.splice(i, 1);
+    }
+
+    // Power-up Collisions
+    for (let i = powerups.length - 1; i >= 0; i--) {
+      powerups[i].update();
+      powerups[i].draw();
+
+      let dist = Math.hypot(bonda.x - powerups[i].x, bonda.y - powerups[i].y);
+      if (dist < bonda.radius + powerups[i].radius) {
+        if (powerups[i].type === 'shield') bonda.hasShield = true;
+        powerups.splice(i, 1);
+      }
+    }
+
+    // Bonda Updates & Particles
+    bonda.update();
+    particles.push(new Particle(bonda.x - 10, bonda.y, '#00f2fe'));
+
+    // Emit WebRTC P2P Data
+    if (isMultiplayer) {
+      p2p.sendState({ y: bonda.y, score: score });
+    }
   }
 
-  drawBird();
-  drawPipes();
-  updatePipes();
-  updateBird();
-  drawScore();
+  // Draw Particles & Players
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].draw();
+    if (particles[i].alpha <= 0) particles.splice(i, 1);
+  }
+
+  ghostPlayer.draw();
+  bonda.draw();
 
   requestAnimationFrame(gameLoop);
 }
 
-// Controls
-window.addEventListener("keydown", function(e) {
-  if (e.code === "Space" && !gameOver) {
-    velocity = lift;
-    jumpSound.currentTime = 0;
-    jumpSound.play();
+function startGame() {
+  gameState = 'PLAYING';
+  score = 0;
+  p2Score = 0;
+  pipes = [];
+  particles = [];
+  powerups = [];
+  bonda.y = canvas.height / 2;
+  bonda.velocity = 0;
+  bonda.hasShield = false;
+
+  document.getElementById('current-score').innerText = '0';
+  document.getElementById('p2-score').innerText = '0';
+  document.querySelectorAll('.menu-screen').forEach((el) => el.classList.remove('active'));
+  document.getElementById('hud-panel').classList.remove('hidden');
+}
+
+function endGame() {
+  gameState = 'GAMEOVER';
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem('bonda_highscore', highScore);
+  }
+
+  document.getElementById('final-score').innerText = score;
+  document.getElementById('high-score').innerText = highScore;
+  document.getElementById('hud-panel').classList.add('hidden');
+  document.getElementById('game-over-menu').classList.add('active');
+}
+
+// --- USER INPUT & CONTROLS ---
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (gameState === 'PLAYING') bonda.velocity = bonda.jump;
   }
 });
-// Mobile touch control
-window.addEventListener("touchstart", function(e) {
-    if (!gameOver) {
-        velocity = lift;           // make the bird jump
-        jumpSound.currentTime = 0;
-        jumpSound.play();
-    } else {
-        restartGame();             // tap to restart if game over
-    }
-}, { passive: false });
 
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (gameState === 'PLAYING') bonda.velocity = bonda.jump;
+});
 
+// UI Navigation Handlers
+document.getElementById('btn-singleplayer').onclick = () => {
+  isMultiplayer = false;
+  ghostPlayer.active = false;
+  document.getElementById('p2-score-tag').classList.add('hidden');
+  startGame();
+};
 
-// Start the game
-pipes.push({ x: canvas.width, top: 150, bottom: 150 + pipeGap, scored: false });
-gameLoop();
+document.getElementById('btn-multiplayer').onclick = () => {
+  showMenu('multiplayer-menu');
+};
 
+document.getElementById('btn-back-mp').onclick = () => {
+  showMenu('main-menu');
+};
+
+document.getElementById('btn-restart').onclick = () => {
+  startGame();
+};
+
+function showMenu(id) {
+  document.querySelectorAll('.menu-screen').forEach((el) => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Host P2P Setup
+document.getElementById('btn-host-room').onclick = async () => {
+  isHost = true;
+  isMultiplayer = true;
+  ghostPlayer.active = true;
+  document.getElementById('host-panel').classList.remove('hidden');
+  document.getElementById('join-panel').classList.add('hidden');
+
+  const offerCode = await p2p.createHostOffer();
+  document.getElementById('share-link-input').value = offerCode;
+
+  // Render QR Code safely
+  const qrContainer = document.getElementById('qrcode-container');
+  qrContainer.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qrContainer, {
+      text: offerCode,
+      width: 120,
+      height: 120
+    });
+  }
+};
+
+document.getElementById('btn-connect-host').onclick = async () => {
+  const ans = document.getElementById('host-answer-input').value.trim();
+  if (ans) {
+    await p2p.completeConnection(ans);
+    document.getElementById('p2-score-tag').classList.remove('hidden');
+    startGame();
+  }
+};
+
+// Join P2P Setup
+document.getElementById('btn-join-room').onclick = () => {
+  isHost = false;
+  isMultiplayer = true;
+  ghostPlayer.active = true;
+  document.getElementById('join-panel').classList.remove('hidden');
+  document.getElementById('host-panel').classList.add('hidden');
+};
+
+document.getElementById('btn-generate-answer').onclick = async () => {
+  const offer = document.getElementById('join-offer-input').value.trim();
+  if (offer) {
+    const ansCode = await p2p.processHostOffer(offer);
+    document.getElementById('join-answer-output').value = ansCode;
+    document.getElementById('join-answer-container').classList.remove('hidden');
+    document.getElementById('p2-score-tag').classList.remove('hidden');
+    startGame();
+  }
+};
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then((reg) => console.log('Service Worker Registered:', reg.scope))
+      .catch((err) => console.log('Service Worker Registration Failed:', err));
+  });
+}
+
+// Start Main Game Loop
+requestAnimationFrame(gameLoop);
