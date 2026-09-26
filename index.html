@@ -1,39 +1,87 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bonda Flappy</title>
-
-  <!-- App Icon -->
-  <link rel="icon" type="image/png" href="images/bonda.png">
-
-  <!-- Manifest for PWA -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Theme color for PWA -->
-  <meta name="theme-color" content="#ffcc00">
-
-  <!-- CSS -->
+  <title>Bonda Flappy - HD & P2P Multiplayer</title>
   <link rel="stylesheet" href="style.css">
+  <!-- QR Code Generator Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
-  <div id="credit">Made by Ameen</div>
+  <div id="game-container">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-  <!-- Game Script -->
+    <!-- UI Overlay / Glassmorphism Panel -->
+    <div id="ui-overlay" class="glass-panel">
+      <!-- MAIN MENU -->
+      <div id="main-menu" class="menu-screen active">
+        <h1 class="game-title">BONDA <span>FLAPPY</span></h1>
+        <p class="subtitle">HD Edition & Serverless P2P</p>
+        
+        <div class="button-group">
+          <button id="btn-singleplayer" class="btn-neon">Single Player</button>
+          <button id="btn-multiplayer" class="btn-neon alt">Multiplayer (P2P)</button>
+        </div>
+      </div>
+
+      <!-- MULTIPLAYER MENU -->
+      <div id="multiplayer-menu" class="menu-screen">
+        <h2>Multiplayer Setup</h2>
+        <p class="info-text">Direct WebRTC Connection (No Server)</p>
+        
+        <div class="mp-actions">
+          <button id="btn-host-room" class="btn-neon">Create Room (Host)</button>
+          <button id="btn-join-room" class="btn-neon alt">Join Room</button>
+        </div>
+
+        <!-- HOST DISPLAY -->
+        <div id="host-panel" class="sub-panel hidden">
+          <p>Scan QR or Share Link with Player 2:</p>
+          <div id="qrcode-container"></div>
+          <input type="text" id="share-link-input" readonly>
+          <div class="step-box">
+            <p>1. Send link/QR to Player 2</p>
+            <p>2. Paste Player 2's Answer Code below:</p>
+            <textarea id="host-answer-input" placeholder="Paste Answer Code here..."></textarea>
+            <button id="btn-connect-host" class="btn-neon small">Connect & Start</button>
+          </div>
+        </div>
+
+        <!-- JOIN DISPLAY -->
+        <div id="join-panel" class="sub-panel hidden">
+          <textarea id="join-offer-input" placeholder="Paste Host Offer Code here..."></textarea>
+          <button id="btn-generate-answer" class="btn-neon small">Generate Answer Code</button>
+          
+          <div id="join-answer-container" class="hidden">
+            <p>Copy this Answer Code back to Host:</p>
+            <textarea id="join-answer-output" readonly></textarea>
+          </div>
+        </div>
+
+        <button id="btn-back-mp" class="btn-link">← Back</button>
+      </div>
+
+      <!-- HUD OVERLAY -->
+      <div id="hud-panel" class="hidden">
+        <div class="score-board">
+          <span id="current-score">0</span>
+          <span id="p2-score-tag" class="hidden">P2: <span id="p2-score">0</span></span>
+        </div>
+      </div>
+
+      <!-- GAME OVER SCREEN -->
+      <div id="game-over-menu" class="menu-screen">
+        <h1 class="game-over-title">GAME OVER</h1>
+        <div class="stats-card">
+          <p>Score: <span id="final-score">0</span></p>
+          <p>High Score: <span id="high-score">0</span></p>
+        </div>
+        <button id="btn-restart" class="btn-neon">Play Again</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
-
-  <!-- Service Worker Registration -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
-          .then(reg => console.log('Service Worker registered:', reg))
-          .catch(err => console.log('Service Worker failed:', err));
-      });
-    }
-  </script>
 </body>
 </html>
